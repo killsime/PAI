@@ -1,5 +1,26 @@
+from fastapi import APIRouter, HTTPException
 import random
 from app.db import Database
+
+# 创建问题路由
+questions_router = APIRouter()
+
+# API路由
+@questions_router.get("/random")
+async def get_random_questions():
+    try:
+        questions = PaperService.get_random_questions()
+        return {"questions": questions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@questions_router.get("/dass")
+async def get_dass_questions():
+    try:
+        questions = PaperService.get_dass_questions()
+        return {"questions": questions}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 class PaperService:
     """试卷生成服务类"""

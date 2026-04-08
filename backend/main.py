@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import api_router
+from app.services import user_router, assessment_router, questions_router
 
 # 创建FastAPI应用
 app = FastAPI()
@@ -8,7 +8,7 @@ app = FastAPI()
 # 配置CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 允许所有来源，生产环境中应该设置具体的前端地址
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -16,7 +16,9 @@ app.add_middleware(
 )
 
 # 注册路由
-app.include_router(api_router)
+app.include_router(user_router, prefix="/user", tags=["user"])
+app.include_router(assessment_router, prefix="/assessment", tags=["assessment"])
+app.include_router(questions_router, prefix="/questions", tags=["questions"])
 
 # 启动事件
 @app.on_event("startup")
