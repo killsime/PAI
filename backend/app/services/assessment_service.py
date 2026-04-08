@@ -91,7 +91,8 @@ class AssessmentService:
                 "depression_level": depression_level,
                 "anxiety_level": anxiety_level,
                 "stress_level": stress_level,
-                "ai_analysis": ai_analysis
+                "ai_analysis": ai_analysis,
+                "user_id": user_id
             }
         except Exception as e:
             raise Exception(f"提交测评结果失败: {str(e)}")

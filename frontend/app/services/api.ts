@@ -119,10 +119,10 @@ export const questionApi = {
 // 测评相关API
 export const assessmentApi = {
   // 提交测评结果
-  submitAssessment: (depression: number, anxiety: number, stress: number) => {
+  submitAssessment: (depression: number, anxiety: number, stress: number, user_id?: number) => {
     return request<AssessmentResult>('/assessment/submit', {
       method: 'POST',
-      body: JSON.stringify({ depression, anxiety, stress }),
+      body: JSON.stringify({ depression, anxiety, stress, user_id }),
     });
   },
 };

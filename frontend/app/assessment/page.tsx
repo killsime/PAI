@@ -46,8 +46,8 @@ export default function AssessmentPage() {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
-        const response = assessmentType === 'random' 
-          ? await questionApi.getRandomQuestions() 
+        const response = assessmentType === 'random'
+          ? await questionApi.getRandomQuestions()
           : await questionApi.getDassQuestions();
         setQuestions(response.questions);
       } catch (err) {
@@ -99,10 +99,16 @@ export default function AssessmentPage() {
 
     try {
       const scores = calculateScores();
+      // 从localStorage获取用户信息
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const user_id = user?.user_id;
+
       const response = await assessmentApi.submitAssessment(
         scores.depression,
         scores.anxiety,
-        scores.stress
+        scores.stress,
+        user_id
       );
       setResult(response);
     } catch (err) {
