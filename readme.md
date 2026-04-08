@@ -1,0 +1,2 @@
+在线心理测评与干预系统的设计与实现，Online psychological assessment and intervention system（PAI）
+使用mysql数据库用于存储用户信息和题库信息，采用git进行代码同步，fastapi后端和nextjs前端
