@@ -40,15 +40,13 @@ export default function AnalysisPage() {
 
       try {
         setLoading(true);
-        // 从本地存储中获取历史记录
-        const storedHistory = localStorage.getItem(`history_${user.user_id}`);
-        if (storedHistory) {
-          setHistory(JSON.parse(storedHistory));
-        } else {
-          setHistory([]);
-        }
+        // 从后端接口获取历史记录
+        const response = await assessmentApi.getHistory(user.user_id);
+        setHistory(response.history);
       } catch (err) {
         setError(err instanceof Error ? err.message : '获取历史测评结果失败');
+        // 发生错误时使用空数组
+        setHistory([]);
       } finally {
         setLoading(false);
       }

@@ -42,6 +42,11 @@ export default function AssessmentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<AssessmentResult | null>(null);
+  const [scores, setScores] = useState({
+    depression: 0,
+    anxiety: 0,
+    stress: 0
+  });
 
   // 获取题目
   useEffect(() => {
@@ -63,7 +68,7 @@ export default function AssessmentPage() {
   }, [assessmentType]); // 当assessmentType变化时重新获取题目
 
   // 处理选项选择
-  const handleOptionChange = async (questionId: number, value: number) => {
+  const handleOptionChange = (questionId: number, value: number) => {
     // 立即更新答案
     const newAnswers = {
       ...answers,
@@ -71,24 +76,34 @@ export default function AssessmentPage() {
     };
     setAnswers(newAnswers);
 
+    // 计算最新得分
+    const currentQuestion = questions[currentQuestionIndex];
+    let latestScores = scores;
+    if (currentQuestion) {
+      // 先减去之前的得分（如果有的话）
+      const oldValue = answers[questionId] || 0;
+      latestScores = {
+        ...scores
+      };
+      latestScores[currentQuestion.dimension as keyof typeof latestScores] -= oldValue;
+      // 加上新的得分
+      latestScores[currentQuestion.dimension as keyof typeof latestScores] += value;
+      // 更新状态
+      setScores(latestScores);
+    }
+
     // 延迟0.3秒后跳转，让用户可以看到自己的选择
-    setTimeout(async () => {
-      // 自动跳转到下一题或提交测评
-      if (currentQuestionIndex === questions.length - 1) {
-        // 最后一题，提交测评
-        // 直接使用newAnswers而不是依赖状态更新
-        // 检查是否所有题目都有回答
-        const allAnswered = questions.every(q => newAnswers[q.id] !== undefined);
-        if (allAnswered) {
-          // 直接传递newAnswers给handleSubmit，确保使用最新的答案
-          await handleSubmit(newAnswers);
-        } else {
-          // 如果还有题目未回答，提示用户
-          setError('请回答所有题目');
-        }
-      } else {
+    setTimeout(() => {
+      if (currentQuestionIndex < questions.length - 1) {
         // 下一题
-        setCurrentQuestionIndex(prev => prev + 1);
+        setCurrentQuestionIndex(prev => {
+          // 确保索引不超出范围
+          const newIndex = prev + 1;
+          return Math.min(newIndex, questions.length - 1);
+        });
+      } else {
+        // 最后一题，自动提交测评
+        handleSubmit(latestScores);
       }
     }, 300);
   };
@@ -100,7 +115,11 @@ export default function AssessmentPage() {
       await handleSubmit();
     } else {
       // 下一题
-      setCurrentQuestionIndex(prev => prev + 1);
+      setCurrentQuestionIndex(prev => {
+        // 确保索引不超出范围
+        const newIndex = prev + 1;
+        return Math.min(newIndex, questions.length - 1);
+      });
     }
   };
 
@@ -123,67 +142,26 @@ export default function AssessmentPage() {
   };
 
   // 提交测评
-  const handleSubmit = async (submitAnswers?: Record<number, number>) => {
-    // 使用传递的answers或当前状态
-    const currentAnswers = submitAnswers || answers;
-
-    // 检查是否所有题目都已回答
-    if (Object.keys(currentAnswers).length < questions.length) {
-      setError('请回答所有题目');
-      return;
-    }
-
+  const handleSubmit = async (submitScores?: typeof scores) => {
     setSubmitting(true);
     setError('');
 
     try {
-      // 计算各维度得分
-      const scores = {
-        depression: 0,
-        anxiety: 0,
-        stress: 0
+      // 使用传入的scores或当前状态
+      const currentScores = submitScores || scores;
+      // 实际得分应该为加起来*2
+      const finalScores = {
+        depression: currentScores.depression * 2,
+        anxiety: currentScores.anxiety * 2,
+        stress: currentScores.stress * 2
       };
 
-      questions.forEach(question => {
-        const answer = currentAnswers[question.id];
-        if (answer !== undefined) {
-          scores[question.dimension as keyof typeof scores] += answer;
-        }
-      });
-
-      // 从localStorage获取用户信息
-      const userStr = localStorage.getItem('user');
-      const user = userStr ? JSON.parse(userStr) : null;
-      const user_id = user?.user_id;
-
+      // 从云端获取用户信息
       const response = await assessmentApi.submitAssessment(
-        scores.depression,
-        scores.anxiety,
-        scores.stress,
-        user_id
+        finalScores.depression,
+        finalScores.anxiety,
+        finalScores.stress
       );
-
-      // 保存测评结果到本地存储
-      if (user_id) {
-        const storedHistory = localStorage.getItem(`history_${user_id}`);
-        const history = storedHistory ? JSON.parse(storedHistory) : [];
-
-        // 添加新的测评结果
-        const newResult = {
-          id: Date.now(),
-          depression_score: scores.depression,
-          anxiety_score: scores.anxiety,
-          stress_score: scores.stress,
-          depression_level: response.depression_level,
-          anxiety_level: response.anxiety_level,
-          stress_level: response.stress_level,
-          ai_analysis: response.ai_analysis,
-          created_at: new Date().toISOString()
-        };
-
-        history.unshift(newResult);
-        localStorage.setItem(`history_${user_id}`, JSON.stringify(history));
-      }
 
       setResult(response);
     } catch (err) {
@@ -260,16 +238,10 @@ export default function AssessmentPage() {
               </div>
             </div>
 
-            <div className="mt-8 flex space-x-4">
-              <button
-                onClick={handleReset}
-                className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                重新测评
-              </button>
+            <div className="mt-8">
               <button
                 onClick={() => router.push('/')}
-                className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors"
               >
                 返回首页
               </button>
@@ -310,7 +282,7 @@ export default function AssessmentPage() {
             </div>
           </div>
 
-          {questions.length > 0 && currentQuestionIndex < questions.length && (
+          {questions.length > 0 && currentQuestionIndex >= 0 && currentQuestionIndex < questions.length && questions[currentQuestionIndex] && (
             <div className="space-y-6">
               <div className="border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow">
                 <div className="flex items-start">

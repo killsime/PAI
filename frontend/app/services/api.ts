@@ -1,6 +1,6 @@
 // API服务，处理与后端的通信
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:47779';
 
 // 类型定义
 export interface User {
@@ -81,50 +81,44 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 export const userApi = {
   // 注册
   register: (username: string, password: string) => {
-    return request<User>('/user/register', {
+    return request<User>('/register', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
   },
   // 登录
   login: (username: string, password: string) => {
-    return request<User>('/user/login', {
+    return request<User>('/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
   },
   // 创建测试用户
   createTestUser: () => {
-    return request<any>('/user/create-test-user', {
+    return request<any>('/create-test-user', {
       method: 'POST',
     });
   },
   // 获取用户信息
   getUserInfo: (user_id: number) => {
-    return request<User>('/user/get_user_info', {
+    return request<User>('/get-user-info', {
       method: 'POST',
       body: JSON.stringify({ user_id }),
     });
   },
-  // 修改密码
-  changePassword: (user_id: number, old_password: string, new_password: string) => {
-    return request<any>('/user/change_password', {
-      method: 'POST',
-      body: JSON.stringify({ user_id, old_password, new_password }),
-    });
-  },
+
 };
 
 // 题目相关API
 export const questionApi = {
   // 获取随机题目
   getRandomQuestions: () => {
-    return request<QuestionsResponse>('/questions/random');
+    return request<QuestionsResponse>('/random');
   },
 
   // 获取DASS-21题目
   getDassQuestions: () => {
-    return request<QuestionsResponse>('/questions/dass');
+    return request<QuestionsResponse>('/dass');
   },
 };
 
@@ -139,9 +133,8 @@ export const assessmentApi = {
   },
   // 获取历史测评结果
   getHistory: (user_id: number) => {
-    return request<{ history: any[] }>('/assessment/history', {
-      method: 'POST',
-      body: JSON.stringify({ user_id }),
+    return request<{ history: any[] }>(`/assessment/history/${user_id}`, {
+      method: 'GET',
     });
   },
 };

@@ -20,6 +20,7 @@ export default function Navbar() {
   // 处理退出登录
   const handleLogout = () => {
     localStorage.removeItem('user');
+    setUser(null);
     router.push('/');
   };
 
@@ -45,13 +46,6 @@ export default function Navbar() {
               </button>
               {showDropdown && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                  <a
-                    href="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
-                    onClick={() => setShowDropdown(false)}
-                  >
-                    个人中心
-                  </a>
                   <a
                     href="/history"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"

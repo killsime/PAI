@@ -10,6 +10,7 @@ export default function HistoryPage() {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
   // 检查用户是否已登录
   useEffect(() => {
@@ -30,15 +31,13 @@ export default function HistoryPage() {
 
       try {
         setLoading(true);
-        // 从本地存储中获取历史记录
-        const storedHistory = localStorage.getItem(`history_${user.user_id}`);
-        if (storedHistory) {
-          setHistory(JSON.parse(storedHistory));
-        } else {
-          setHistory([]);
-        }
+        // 从后端接口获取历史记录
+        const response = await assessmentApi.getHistory(user.user_id);
+        setHistory(response.history);
       } catch (err) {
         setError(err instanceof Error ? err.message : '获取历史测评结果失败');
+        // 发生错误时使用空数组
+        setHistory([]);
       } finally {
         setLoading(false);
       }
@@ -87,40 +86,69 @@ export default function HistoryPage() {
                 开始测评
               </button>
             </div>
-          ) : (
+          ) : selectedRecord ? (
             <div className="space-y-6">
+              <button
+                onClick={() => setSelectedRecord(null)}
+                className="mb-4 text-indigo-600 hover:text-indigo-800 transition-colors"
+              >
+                ← 返回列表
+              </button>
+
+              <div className="border border-gray-200 rounded-lg p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h2 className="text-xl font-semibold text-gray-800">测评 #{selectedRecord.id}</h2>
+                  <span className="text-gray-500 text-sm">
+                    {new Date(selectedRecord.created_at).toLocaleString('zh-CN')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h3 className="text-blue-800 font-medium mb-2">抑郁维度</h3>
+                    <p className="text-gray-700">得分: {selectedRecord.depression_score}</p>
+                    <p className="text-gray-700">严重程度: {selectedRecord.depression_level}</p>
+                  </div>
+
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <h3 className="text-purple-800 font-medium mb-2">焦虑维度</h3>
+                    <p className="text-gray-700">得分: {selectedRecord.anxiety_score}</p>
+                    <p className="text-gray-700">严重程度: {selectedRecord.anxiety_level}</p>
+                  </div>
+
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="text-green-800 font-medium mb-2">压力维度</h3>
+                    <p className="text-gray-700">得分: {selectedRecord.stress_score}</p>
+                    <p className="text-gray-700">严重程度: {selectedRecord.stress_level}</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-gray-800 font-medium mb-2">AI分析</h3>
+                  <p className="text-gray-700 whitespace-pre-line">{selectedRecord.ai_analysis}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
               {history.map((item, index) => (
-                <div key={item.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-sm transition-shadow">
-                  <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-xl font-semibold text-gray-800">测评 #{item.id}</h2>
-                    <span className="text-gray-500 text-sm">
-                      {new Date(item.created_at).toLocaleString('zh-CN')}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <h3 className="text-blue-800 font-medium mb-2">抑郁维度</h3>
-                      <p className="text-gray-700">得分: {item.depression_score}</p>
-                      <p className="text-gray-700">严重程度: {item.depression_level}</p>
+                <div
+                  key={item.id}
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow cursor-pointer"
+                  onClick={() => setSelectedRecord(item)}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-800">测评 #{item.id}</h2>
+                      <span className="text-gray-500 text-sm">
+                        {new Date(item.created_at).toLocaleString('zh-CN')}
+                      </span>
                     </div>
-
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <h3 className="text-purple-800 font-medium mb-2">焦虑维度</h3>
-                      <p className="text-gray-700">得分: {item.anxiety_score}</p>
-                      <p className="text-gray-700">严重程度: {item.anxiety_level}</p>
+                    <div className="flex space-x-4">
+                      <span className="text-blue-600 font-medium">抑郁: {item.depression_score}</span>
+                      <span className="text-purple-600 font-medium">焦虑: {item.anxiety_score}</span>
+                      <span className="text-green-600 font-medium">压力: {item.stress_score}</span>
                     </div>
-
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <h3 className="text-green-800 font-medium mb-2">压力维度</h3>
-                      <p className="text-gray-700">得分: {item.stress_score}</p>
-                      <p className="text-gray-700">严重程度: {item.stress_level}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-gray-800 font-medium mb-2">AI分析</h3>
-                    <p className="text-gray-700 whitespace-pre-line">{item.ai_analysis}</p>
                   </div>
                 </div>
               ))}
