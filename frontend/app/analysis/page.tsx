@@ -116,14 +116,12 @@ export default function AnalysisPage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis domain={[0, 30]} />
-                    <Tooltip />
                     <Legend />
                     <Line
                       type="monotone"
                       dataKey="depression"
                       stroke="#3b82f6"
                       strokeWidth={2}
-                      activeDot={{ r: 8 }}
                       name="抑郁"
                     />
                     <Line
@@ -131,7 +129,6 @@ export default function AnalysisPage() {
                       dataKey="anxiety"
                       stroke="#8b5cf6"
                       strokeWidth={2}
-                      activeDot={{ r: 8 }}
                       name="焦虑"
                     />
                     <Line
@@ -139,7 +136,6 @@ export default function AnalysisPage() {
                       dataKey="stress"
                       stroke="#10b981"
                       strokeWidth={2}
-                      activeDot={{ r: 8 }}
                       name="压力"
                     />
                   </LineChart>
@@ -150,30 +146,30 @@ export default function AnalysisPage() {
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="text-blue-800 font-medium mb-2">抑郁维度</h3>
                   <p className="text-gray-700">
-                    最近一次得分: {history[0]?.depression_score || 0}
+                    最近一次得分: {history[history.length - 1]?.depression_score || 0}
                   </p>
                   <p className="text-gray-700">
-                    严重程度: {history[0]?.depression_level || '未知'}
+                    严重程度: {history[history.length - 1]?.depression_level || '未知'}
                   </p>
                 </div>
 
                 <div className="bg-purple-50 p-4 rounded-lg">
                   <h3 className="text-purple-800 font-medium mb-2">焦虑维度</h3>
                   <p className="text-gray-700">
-                    最近一次得分: {history[0]?.anxiety_score || 0}
+                    最近一次得分: {history[history.length - 1]?.anxiety_score || 0}
                   </p>
                   <p className="text-gray-700">
-                    严重程度: {history[0]?.anxiety_level || '未知'}
+                    严重程度: {history[history.length - 1]?.anxiety_level || '未知'}
                   </p>
                 </div>
 
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h3 className="text-green-800 font-medium mb-2">压力维度</h3>
                   <p className="text-gray-700">
-                    最近一次得分: {history[0]?.stress_score || 0}
+                    最近一次得分: {history[history.length - 1]?.stress_score || 0}
                   </p>
                   <p className="text-gray-700">
-                    严重程度: {history[0]?.stress_level || '未知'}
+                    严重程度: {history[history.length - 1]?.stress_level || '未知'}
                   </p>
                 </div>
               </div>

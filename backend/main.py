@@ -31,16 +31,3 @@ async def startup_event():
 async def root():
     return {"message": "Welcome to PAI API"}
 
-# 全局处理OPTIONS请求
-@app.options("/{path:path}")
-async def options_handler(path: str):
-    return {"message": "OK"}
-
-# 测试API端点
-@app.get("/test")
-async def test():
-    return {"message": "Test API works!"}
-
-@app.post("/test-post")
-async def test_post(data: dict):
-    return {"message": "Test POST API works!", "data": data}

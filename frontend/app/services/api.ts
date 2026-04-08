@@ -81,27 +81,27 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 export const userApi = {
   // 注册
   register: (username: string, password: string) => {
-    return request<User>('/register', {
+    return request<User>('/user/register', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
   },
   // 登录
   login: (username: string, password: string) => {
-    return request<User>('/login', {
+    return request<User>('/user/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
   },
   // 创建测试用户
   createTestUser: () => {
-    return request<any>('/create-test-user', {
+    return request<any>('/user/create-test-user', {
       method: 'POST',
     });
   },
   // 获取用户信息
   getUserInfo: (user_id: number) => {
-    return request<User>('/get-user-info', {
+    return request<User>('/user/get-user-info', {
       method: 'POST',
       body: JSON.stringify({ user_id }),
     });
@@ -113,12 +113,12 @@ export const userApi = {
 export const questionApi = {
   // 获取随机题目
   getRandomQuestions: () => {
-    return request<QuestionsResponse>('/random');
+    return request<QuestionsResponse>('/questions/random');
   },
 
   // 获取DASS-21题目
   getDassQuestions: () => {
-    return request<QuestionsResponse>('/dass');
+    return request<QuestionsResponse>('/questions/dass');
   },
 };
 
