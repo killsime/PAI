@@ -96,3 +96,20 @@ class AssessmentService:
             }
         except Exception as e:
             raise Exception(f"提交测评结果失败: {str(e)}")
+    
+    @staticmethod
+    def get_user_history(user_id):
+        """获取用户的历史测评结果"""
+        try:
+            query = """
+            SELECT id, depression_score, anxiety_score, stress_score, 
+                   depression_level, anxiety_level, stress_level, ai_analysis, 
+                   created_at
+            FROM result
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+            """
+            results = Database.execute_query(query, (user_id,))
+            return results
+        except Exception as e:
+            raise Exception(f"获取历史测评结果失败: {str(e)}")

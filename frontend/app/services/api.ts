@@ -86,7 +86,6 @@ export const userApi = {
       body: JSON.stringify({ username, password }),
     });
   },
-
   // 登录
   login: (username: string, password: string) => {
     return request<User>('/user/login', {
@@ -94,11 +93,24 @@ export const userApi = {
       body: JSON.stringify({ username, password }),
     });
   },
-
   // 创建测试用户
   createTestUser: () => {
-    return request<{ message: string } | User>('/user/create-test-user', {
+    return request<any>('/user/create-test-user', {
       method: 'POST',
+    });
+  },
+  // 获取用户信息
+  getUserInfo: (user_id: number) => {
+    return request<User>('/user/get_user_info', {
+      method: 'POST',
+      body: JSON.stringify({ user_id }),
+    });
+  },
+  // 修改密码
+  changePassword: (user_id: number, old_password: string, new_password: string) => {
+    return request<any>('/user/change_password', {
+      method: 'POST',
+      body: JSON.stringify({ user_id, old_password, new_password }),
     });
   },
 };
@@ -123,6 +135,13 @@ export const assessmentApi = {
     return request<AssessmentResult>('/assessment/submit', {
       method: 'POST',
       body: JSON.stringify({ depression, anxiety, stress, user_id }),
+    });
+  },
+  // 获取历史测评结果
+  getHistory: (user_id: number) => {
+    return request<{ history: any[] }>('/assessment/history', {
+      method: 'POST',
+      body: JSON.stringify({ user_id }),
     });
   },
 };

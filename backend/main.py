@@ -33,3 +33,12 @@ async def root():
 @app.options("/{path:path}")
 async def options_handler(path: str):
     return {"message": "OK"}
+
+# 测试API端点
+@app.get("/test")
+async def test():
+    return {"message": "Test API works!"}
+
+@app.post("/test-post")
+async def test_post(data: dict):
+    return {"message": "Test POST API works!", "data": data}

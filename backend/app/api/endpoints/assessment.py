@@ -19,3 +19,11 @@ async def submit_assessment(request: AssessmentRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/history/{user_id}")
+async def get_assessment_history(user_id: int):
+    try:
+        result = AssessmentService.get_user_history(user_id)
+        return {"history": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

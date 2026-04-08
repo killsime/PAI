@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Navbar from './components/Navbar';
 
 export default function HomePage() {
   const router = useRouter();
@@ -12,10 +13,6 @@ export default function HomePage() {
     setUser(storedUser);
   }, []);
 
-  const handleLogin = () => {
-    router.push('/login');
-  };
-
   const handleAssessment = () => {
     if (user) {
       router.push('/assessment');
@@ -26,23 +23,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
-      <nav className="bg-white shadow-sm py-4 px-6">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="text-xl font-bold text-indigo-600">心理测评系统</div>
-          <div className="flex items-center gap-4">
-            {user ? (
-              <span className="text-gray-600">欢迎回来</span>
-            ) : (
-              <button
-                onClick={handleLogin}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                登录
-              </button>
-            )}
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       <main className="max-w-7xl mx-auto py-16 px-6">
         <div className="text-center mb-12">

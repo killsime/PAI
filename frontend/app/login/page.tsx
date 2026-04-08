@@ -20,8 +20,8 @@ export default function LoginPage() {
       console.log('登录成功:', response);
       // 存储用户信息到localStorage
       localStorage.setItem('user', JSON.stringify(response));
-      // 跳转到测评页面
-      router.push('/assessment');
+      // 跳转到主页
+      router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败，请重试');
     } finally {
