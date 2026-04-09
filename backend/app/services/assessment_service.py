@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from app.db import Database
+from sqlalchemy.orm import Session
+from app.db import get_db, Result
 
 # 创建评估路由
 assessment_router = APIRouter()
@@ -14,19 +15,19 @@ class AssessmentRequest(BaseModel):
 
 # API路由
 @assessment_router.post("/submit")
-async def submit_assessment(request: AssessmentRequest):
+async def submit_assessment(request: AssessmentRequest, db: Session = Depends(get_db)):
     try:
         result = AssessmentService.submit_assessment(
-            request.depression, request.anxiety, request.stress, request.user_id
+            request.depression, request.anxiety, request.stress, request.user_id, db
         )
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @assessment_router.get("/history/{user_id}")
-async def get_assessment_history(user_id: int):
+async def get_assessment_history(user_id: int, db: Session = Depends(get_db)):
     try:
-        result = AssessmentService.get_user_history(user_id)
+        result = AssessmentService.get_user_history(user_id, db)
         return {"history": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -94,7 +95,7 @@ class AssessmentService:
         return analysis
     
     @staticmethod
-    def submit_assessment(depression, anxiety, stress, user_id=None):
+    def submit_assessment(depression, anxiety, stress, user_id=None, db=None):
         """提交测评结果"""
         try:
             # 计算严重程度
@@ -105,17 +106,24 @@ class AssessmentService:
             # 生成AI分析
             ai_analysis = AssessmentService.generate_ai_analysis(depression, anxiety, stress)
             
-            # 插入测评结果
-            query = """
-            INSERT INTO result (user_id, depression_score, anxiety_score, stress_score, 
-                               depression_level, anxiety_level, stress_level, ai_analysis)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            assessment_id = Database.execute_insert(query, (user_id, depression, anxiety, stress, 
-                                                         depression_level, anxiety_level, stress_level, ai_analysis))
+            # 创建测评结果
+            new_result = Result(
+                user_id=user_id,
+                depression_score=depression,
+                anxiety_score=anxiety,
+                stress_score=stress,
+                depression_level=depression_level,
+                anxiety_level=anxiety_level,
+                stress_level=stress_level,
+                ai_analysis=ai_analysis
+            )
+            
+            db.add(new_result)
+            db.commit()
+            db.refresh(new_result)
             
             return {
-                "assessment_id": assessment_id,
+                "assessment_id": new_result.id,
                 "depression": depression,
                 "anxiety": anxiety,
                 "stress": stress,
@@ -126,21 +134,32 @@ class AssessmentService:
                 "user_id": user_id
             }
         except Exception as e:
+            db.rollback()
             raise Exception(f"提交测评结果失败: {str(e)}")
     
     @staticmethod
-    def get_user_history(user_id):
+    def get_user_history(user_id, db=None):
         """获取用户的历史测评结果"""
         try:
-            query = """
-            SELECT id, depression_score, anxiety_score, stress_score, 
-                   depression_level, anxiety_level, stress_level, ai_analysis, 
-                   created_at
-            FROM result
-            WHERE user_id = %s
-            ORDER BY created_at DESC
-            """
-            results = Database.execute_query(query, (user_id,))
-            return results
+            results = db.query(Result).filter(
+                Result.user_id == user_id
+            ).order_by(Result.created_at.desc()).all()
+            
+            # 转换为字典列表
+            history = []
+            for result in results:
+                history.append({
+                    "id": result.id,
+                    "depression_score": result.depression_score,
+                    "anxiety_score": result.anxiety_score,
+                    "stress_score": result.stress_score,
+                    "depression_level": result.depression_level,
+                    "anxiety_level": result.anxiety_level,
+                    "stress_level": result.stress_level,
+                    "ai_analysis": result.ai_analysis,
+                    "created_at": result.created_at
+                })
+            
+            return history
         except Exception as e:
             raise Exception(f"获取历史测评结果失败: {str(e)}")

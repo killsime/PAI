@@ -1,4 +1,6 @@
-import mysql.connector
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 import os
 
@@ -6,83 +8,27 @@ import os
 load_dotenv()
 
 # 数据库连接配置
-db_config = {
-    'user': 'root',
-    'password': 'root',
-    'host': 'localhost',
-    'database': 'PAI',
-    'auth_plugin': 'mysql_native_password'
-}
+DATABASE_URL = "mysql+pymysql://root:root@localhost/PAI"
 
-class Database:
-    """数据库连接和操作类"""
-    
-    @staticmethod
-    def get_connection():
-        """获取数据库连接"""
-        try:
-            conn = mysql.connector.connect(**db_config)
-            return conn
-        except Exception as e:
-            raise Exception(f"数据库连接失败: {str(e)}")
-    
-    @staticmethod
-    def execute_query(query, params=None):
-        """执行查询并返回结果"""
-        conn = None
-        cursor = None
-        try:
-            conn = Database.get_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute(query, params)
-            result = cursor.fetchall()
-            return result
-        except Exception as e:
-            raise Exception(f"数据库查询失败: {str(e)}")
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.close()
-    
-    @staticmethod
-    def execute_update(query, params=None):
-        """执行更新操作并返回受影响的行数"""
-        conn = None
-        cursor = None
-        try:
-            conn = Database.get_connection()
-            cursor = conn.cursor()
-            cursor.execute(query, params)
-            conn.commit()
-            return cursor.rowcount
-        except Exception as e:
-            if conn:
-                conn.rollback()
-            raise Exception(f"数据库更新失败: {str(e)}")
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.close()
-    
-    @staticmethod
-    def execute_insert(query, params=None):
-        """执行插入操作并返回插入的ID"""
-        conn = None
-        cursor = None
-        try:
-            conn = Database.get_connection()
-            cursor = conn.cursor()
-            cursor.execute(query, params)
-            conn.commit()
-            return cursor.lastrowid
-        except Exception as e:
-            if conn:
-                conn.rollback()
-            raise Exception(f"数据库插入失败: {str(e)}")
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.close()
+# 创建数据库引擎
+engine = create_engine(DATABASE_URL)
+
+# 创建会话工厂
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# 创建基类
+Base = declarative_base()
+
+# 依赖注入函数
+def get_db():
+    """获取数据库会话"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# 数据库初始化
+def init_db():
+    """初始化数据库，创建所有表"""
+    Base.metadata.create_all(bind=engine)

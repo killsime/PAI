@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.services import user_router, assessment_router, questions_router
+from app.db import init_db
 
 # 创建FastAPI应用
 app = FastAPI()
@@ -23,8 +24,8 @@ app.include_router(questions_router, prefix="/questions", tags=["questions"])
 # 启动事件
 @app.on_event("startup")
 async def startup_event():
-    # 应用启动时的初始化操作
-    pass
+    # 初始化数据库
+    init_db()
 
 # 根路径
 @app.get("/")

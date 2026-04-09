@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from app.db import Database
+from sqlalchemy.orm import Session
+from app.db import get_db, User
 import hashlib
 
 # 创建用户路由
@@ -17,17 +18,17 @@ class LoginRequest(BaseModel):
 
 # API路由
 @user_router.post("/register")
-async def register(request: RegisterRequest):
+async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     try:
-        result = UserService.register(request.username, request.password)
+        result = UserService.register(request.username, request.password, db)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @user_router.post("/login")
-async def login(request: LoginRequest):
+async def login(request: LoginRequest, db: Session = Depends(get_db)):
     try:
-        result = UserService.login(request.username, request.password)
+        result = UserService.login(request.username, request.password, db)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -42,41 +43,45 @@ class UserService:
         return hashlib.md5(password.encode()).hexdigest()
     
     @staticmethod
-    def register(username, password):
+    def register(username, password, db):
         """用户注册"""
         try:
             # 检查用户名是否已存在
-            query = "SELECT id FROM user WHERE username = %s"
-            result = Database.execute_query(query, (username,))
-            if result:
+            existing_user = db.query(User).filter(User.username == username).first()
+            if existing_user:
                 raise Exception("用户名已存在")
             
             # 对密码进行哈希处理
             hashed_password = UserService.hash_password(password)
             
-            # 插入新用户
-            query = "INSERT INTO user (username, password) VALUES (%s, %s)"
-            user_id = Database.execute_insert(query, (username, hashed_password))
+            # 创建新用户
+            new_user = User(username=username, password=hashed_password)
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
             
-            return {"user_id": user_id, "username": username}
+            return {"user_id": new_user.id, "username": new_user.username}
         except Exception as e:
+            db.rollback()
             raise Exception(f"注册失败: {str(e)}")
     
     @staticmethod
-    def login(username, password):
+    def login(username, password, db):
         """用户登录"""
         try:
             # 对密码进行哈希处理
             hashed_password = UserService.hash_password(password)
             
             # 检查用户名和密码是否匹配
-            query = "SELECT id, username FROM user WHERE username = %s AND password = %s"
-            result = Database.execute_query(query, (username, hashed_password))
-            if not result:
+            user = db.query(User).filter(
+                User.username == username,
+                User.password == hashed_password
+            ).first()
+            
+            if not user:
                 raise Exception("用户名或密码错误")
             
-            user = result[0]
-            return {"user_id": user["id"], "username": user["username"]}
+            return {"user_id": user.id, "username": user.username}
         except Exception as e:
             raise Exception(f"登录失败: {str(e)}")
     

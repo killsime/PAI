@@ -97,7 +97,7 @@ export default function HistoryPage() {
 
               <div className="border border-gray-200 rounded-lg p-6">
                 <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">测评 #{selectedRecord.id}</h2>
+
                   <span className="text-gray-500 text-sm">
                     {new Date(selectedRecord.created_at).toLocaleString('zh-CN')}
                   </span>
@@ -139,7 +139,7 @@ export default function HistoryPage() {
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-800">测评 #{item.id}</h2>
+
                       <span className="text-gray-500 text-sm">
                         {new Date(item.created_at).toLocaleString('zh-CN')}
                       </span>
