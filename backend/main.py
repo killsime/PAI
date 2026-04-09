@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.services import user_router, assessment_router, questions_router
+from app.services import user_router, assessment_router, questions_router, admin_router
 from app.db import init_db
 
 # 创建FastAPI应用
@@ -20,6 +20,7 @@ app.add_middleware(
 app.include_router(user_router, prefix="/user", tags=["user"])
 app.include_router(assessment_router, prefix="/assessment", tags=["assessment"])
 app.include_router(questions_router, prefix="/questions", tags=["questions"])
+app.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 # 启动事件
 @app.on_event("startup")

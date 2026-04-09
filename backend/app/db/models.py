@@ -9,6 +9,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     password = Column(String(100), nullable=False)
+    is_admin = Column(Integer, default=0, nullable=False)  # 0: 普通用户, 1: 管理员
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Assessment(Base):
