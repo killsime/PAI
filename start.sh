@@ -2,12 +2,6 @@
 
 # 启动前后端服务的脚本
 
-# 进入项目根目录
-cd "$(dirname "$0")"
-
-# 创建日志目录（如果不存在）
-mkdir -p logs
-
 # 启动后端服务
 echo "Starting backend service..."
 cd backend
@@ -36,4 +30,4 @@ echo "Frontend available at: http://localhost:3000"
 echo "Admin login available at: http://localhost:3000/admin/login"
 echo
 echo "Both services have been started."
-echo "To stop the services, use 'pkill -f uvicorn' and 'pkill -f next'"
+echo "To stop the services, use './kill.sh'"
