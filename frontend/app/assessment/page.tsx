@@ -69,6 +69,9 @@ export default function AssessmentPage() {
 
   // 处理选项选择
   const handleOptionChange = (questionId: number, value: number) => {
+    // 如果正在提交，不处理新的选择
+    if (submitting) return;
+
     // 立即更新答案
     const newAnswers = {
       ...answers,
@@ -110,6 +113,9 @@ export default function AssessmentPage() {
 
   // 处理下一题
   const handleNextQuestion = async () => {
+    // 如果正在提交，不处理新的操作
+    if (submitting) return;
+
     if (currentQuestionIndex === questions.length - 1) {
       // 最后一题，提交测评
       await handleSubmit();
@@ -199,6 +205,24 @@ export default function AssessmentPage() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             <p className="mt-4 text-gray-600">加载题目中...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+        <Navbar />
+        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
+          <div className="text-center">
+            <svg className="animate-spin h-16 w-16 text-indigo-600 mx-auto" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p className="mt-6 text-xl font-semibold text-gray-700">正在分析您的测评结果...</p>
+            <p className="mt-2 text-gray-600">请稍候，这可能需要几秒钟时间</p>
           </div>
         </div>
       </div>
