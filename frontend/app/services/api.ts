@@ -1,6 +1,6 @@
 // API服务，处理与后端的通信
 
-const API_BASE_URL = 'http://localhost:47779';
+const API_BASE_URL = 'http://localhost:8000';
 
 // 类型定义
 export interface User {

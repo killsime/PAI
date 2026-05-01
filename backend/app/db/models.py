@@ -44,3 +44,24 @@ class Result(Base):
     stress_level = Column(String(50), nullable=False)
     ai_analysis = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class UserStatus(Base):
+    """用户状态表"""
+    __tablename__ = "user_status"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, unique=True)
+    level = Column(String(50), nullable=False)  # 综合等级：normal, mild, moderate, severe, extremely_severe
+    last_push_time = Column(DateTime(timezone=True), nullable=True)
+    last_message_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+class PushMessage(Base):
+    """推送消息表"""
+    __tablename__ = "push_message"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    level = Column(String(50), nullable=False)  # 适用等级
+    content = Column(Text, nullable=False)  # 推送内容
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

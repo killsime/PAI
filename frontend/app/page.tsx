@@ -3,15 +3,53 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from './components/Navbar';
 
+interface PushMessage {
+  content: string;
+  level: string;
+  level_cn: string;
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [user, setUser] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [pushMessage, setPushMessage] = useState<PushMessage | null>(null);
 
   // 检查用户是否已登录（只在客户端执行）
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     setUser(storedUser);
+
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUserId(userData.user_id);
+        console.log('用户数据:', userData, 'userId:', userData.user_id);
+      } catch (e) {
+        console.error('Failed to parse user data:', e);
+      }
+    }
   }, []);
+
+  // 获取推送消息
+  useEffect(() => {
+    if (userId) {
+      fetchPushMessage(userId);
+    }
+  }, [userId]);
+
+  const fetchPushMessage = async (uid: number) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/push/message/${uid}`);
+      const data = await res.json();
+      console.log('推送消息响应:', data);
+      if (data.success && data.data) {
+        setPushMessage(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch push message:', err);
+    }
+  };
 
   const handleAssessment = () => {
     if (user) {
@@ -21,17 +59,49 @@ export default function HomePage() {
     }
   };
 
+  // 根据等级返回颜色
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'normal':
+        return 'from-green-400 to-blue-400';
+      case 'mild':
+        return 'from-yellow-400 to-orange-400';
+      case 'moderate':
+        return 'from-orange-400 to-red-400';
+      case 'severe':
+      case 'extremely_severe':
+        return 'from-red-400 to-pink-500';
+      default:
+        return 'from-blue-400 to-purple-400';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       <Navbar />
 
       <main className="max-w-7xl mx-auto py-16 px-6">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">心理健康测评</h1>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">心理健康测评</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             定期进行心理健康测评，了解自己的心理状态，及时发现问题并采取措施
           </p>
         </div>
+
+        {/* 推送消息卡片 */}
+        {pushMessage && (
+          <div className="mb-8">
+            <div className={`bg-gradient-to-r ${getLevelColor(pushMessage.level)} rounded-2xl shadow-lg p-6`}>
+              <div className="flex items-start">
+                <div className="text-4xl mr-4">💡</div>
+                <div className="flex-1">
+                  <div className="text-white text-sm font-medium mb-2 opacity-90">{pushMessage.level_cn}</div>
+                  <div className="text-white text-lg">{pushMessage.content}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow">

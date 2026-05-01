@@ -162,11 +162,25 @@ export default function AssessmentPage() {
         stress: currentScores.stress * 2
       };
 
-      // 从云端获取用户信息
+      // 从localStorage获取用户ID
+      const storedUser = localStorage.getItem('user');
+      let userId: number | undefined;
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          userId = userData.user_id;
+          console.log('获取到用户ID:', userId);
+        } catch (e) {
+          console.error('解析用户数据失败:', e);
+        }
+      }
+
+      // 提交测评（传递user_id）
       const response = await assessmentApi.submitAssessment(
         finalScores.depression,
         finalScores.anxiety,
-        finalScores.stress
+        finalScores.stress,
+        userId
       );
 
       setResult(response);

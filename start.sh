@@ -22,7 +22,7 @@ echo "Starting frontend service..."
 cd ../frontend
 
 # 启动前端开发服务器
-npm run dev -- --port 3000 > logs/frontend.log 2>&1 &
+npm run dev -- --turbo --port 3000 > logs/frontend.log 2>&1 &
 
 # 输出前端启动信息
 echo "Frontend service started. Logs are being written to logs/frontend.log"

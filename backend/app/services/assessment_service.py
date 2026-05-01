@@ -1,23 +1,43 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from app.db import get_db, Result
+from app.db import get_db, Result, UserStatus, PushMessage
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+from datetime import datetime
+import random
 
 # 加载环境变量
 load_dotenv()
 
 # 创建评估路由
 assessment_router = APIRouter()
-AI_explain = True
+AI_explain = False
 
 # 创建 OpenAI 客户端
 client = OpenAI(
     api_key=os.getenv("DEEPSEEK_API_KEY"),
     base_url=os.getenv("DEEPSEEK_BASE_URL")
 )
+
+# 等级权重映射
+level_weight = {
+    "正常": 1,
+    "轻度": 2,
+    "中度": 3,
+    "重度": 4,
+    "极重": 5
+}
+
+# 等级英文名映射
+level_name_map = {
+    "正常": "normal",
+    "轻度": "mild",
+    "中度": "moderate",
+    "重度": "severe",
+    "极重": "extremely_severe"
+}
 
 # 评估相关模型
 class AssessmentRequest(BaseModel):
@@ -26,7 +46,7 @@ class AssessmentRequest(BaseModel):
     stress: int
     user_id: int | None = None
 
-# API路由
+# API接口
 @assessment_router.post("/submit")
 async def submit_assessment(request: AssessmentRequest, db: Session = Depends(get_db)):
     try:
@@ -186,6 +206,40 @@ class AssessmentService:
             db.add(new_result)
             db.commit()
             db.refresh(new_result)
+            
+            # 更新用户状态并立即推送新消息（如果有user_id）
+            if user_id:
+                # 找出最高等级
+                levels = [depression_level, anxiety_level, stress_level]
+                max_level_name = max(levels, key=lambda x: level_weight.get(x, 0))
+                level_en = level_name_map.get(max_level_name, "normal")
+                
+                # 查找或创建用户状态
+                user_status = db.query(UserStatus).filter(UserStatus.user_id == user_id).first()
+                if not user_status:
+                    user_status = UserStatus(user_id=user_id, level=level_en)
+                    db.add(user_status)
+                else:
+                    user_status.level = level_en
+                
+                db.commit()
+                db.refresh(user_status)
+                
+                # 立即推送新消息（每次测评都推送）
+                messages = db.query(PushMessage).filter(PushMessage.level == level_en).all()
+                if messages:
+                    # 避免重复
+                    if user_status.last_message_id:
+                        available = [m for m in messages if m.id != user_status.last_message_id]
+                        if not available:
+                            available = messages
+                    else:
+                        available = messages
+                    
+                    selected = random.choice(available)
+                    user_status.last_push_time = datetime.now()
+                    user_status.last_message_id = selected.id
+                    db.commit()
             
             return {
                 "assessment_id": new_result.id,
