@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { adminApi } from '@/app/services/api'
 
 const DashboardPage = () => {
   const router = useRouter()
@@ -22,8 +23,7 @@ const DashboardPage = () => {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/dashboard/stats')
-      const data = await res.json()
+      const data = await adminApi.getDashboardStats()
       if (data.success) {
         setStats(data.data)
       }
@@ -45,20 +45,20 @@ const DashboardPage = () => {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-8">管理面板</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-4xl mb-2">👥</div>
           <div className="text-3xl font-bold text-gray-800">{stats?.user_count || 0}</div>
           <div className="text-gray-500">用户总数</div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-4xl mb-2">📊</div>
           <div className="text-3xl font-bold text-gray-800">{stats?.assessment_count || 0}</div>
           <div className="text-gray-500">测评次数</div>
         </div>
-        
+
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-4xl mb-2">❓</div>
           <div className="text-3xl font-bold text-gray-800">{stats?.question_count || 0}</div>
@@ -84,13 +84,13 @@ const DashboardPage = () => {
           <div className="text-xl font-semibold">用户管理</div>
           <div className="text-gray-500">管理系统用户</div>
         </Link>
-        
+
         <Link href="/admin/questions" className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
           <div className="text-4xl mb-2">❓</div>
           <div className="text-xl font-semibold">题目管理</div>
           <div className="text-gray-500">管理测评题目</div>
         </Link>
-        
+
         <Link href="/admin/push" className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">
           <div className="text-4xl mb-2">📢</div>
           <div className="text-xl font-semibold">推送消息管理</div>

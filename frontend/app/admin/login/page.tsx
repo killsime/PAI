@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { adminApi } from '@/app/services/api';
 
 const AdminLoginPage = () => {
   const router = useRouter();
@@ -15,19 +16,7 @@ const AdminLoginPage = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('登录失败');
-      }
-
-      const data = await response.json();
+      const data = await adminApi.login(username, password);
       localStorage.setItem('admin_token', JSON.stringify(data));
       router.push('/admin/users');
     } catch (err) {
@@ -41,7 +30,7 @@ const AdminLoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">管理员登录</h1>
-        
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}

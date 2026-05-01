@@ -1,262 +1,293 @@
-'use client'
-import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+'use client';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Modal from '@/components/Modal';
+import Pagination from '@/components/Pagination';
+import { adminApi } from '@/app/services/api';
 
 interface PushMessage {
-  id: number
-  level: string
-  level_cn: string
-  content: string
-  created_at: string
+  id: number;
+  level: string;
+  level_cn: string;
+  content: string;
+  created_at: string;
 }
 
-const levelOptions = [
-  { value: 'normal', label: '正常' },
-  { value: 'mild', label: '轻度' },
-  { value: 'moderate', label: '中度' },
-  { value: 'severe', label: '重度' },
-  { value: 'extremely_severe', label: '极重' },
-]
+const PushPage = () => {
+  const [messages, setMessages] = useState<PushMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
-const PushMessagesPage = () => {
-  const router = useRouter()
-  const [messages, setMessages] = useState<PushMessage[]>([])
-  const [loading, setLoading] = useState(true)
-  const [expandedLevels, setExpandedLevels] = useState<Set<string>>(new Set(['normal', 'mild', 'moderate', 'severe', 'extremely_severe']))
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [formData, setFormData] = useState({ level: 'normal', content: '' })
+  const searchParams = useSearchParams();
 
+  // 添加/编辑弹窗
+  const [showModal, setShowModal] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<PushMessage | null>(null);
+  const [formData, setFormData] = useState({ level: 'normal', content: '' });
+
+  // 获取当前等级
+  const getLevel = () => {
+    const level = searchParams.get('level') || 'all';
+    return level;
+  };
+
+  // 监听搜索参数变化
   useEffect(() => {
-    const checkAuth = () => {
-      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null
-      if (!adminToken) {
-        router.push('/admin/login')
-        return
-      }
-    }
-    checkAuth()
-    fetchMessages()
-  }, [router])
+    setCurrentPage(1);
+  }, [searchParams]);
 
   const fetchMessages = async () => {
-    setLoading(true)
+    setLoading(true);
+    setError('');
     try {
-      const res = await fetch('http://localhost:8000/api/push/messages')
-      const data = await res.json()
-      if (data.success) {
-        setMessages(data.data)
-      }
+      const data = await adminApi.getPushMessages();
+      setMessages(data.data || []);
     } catch (err) {
-      console.error('Failed to fetch messages:', err)
+      setError('获取推送消息列表失败');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const toggleExpand = (level: string) => {
-    const newExpanded = new Set(expandedLevels)
-    if (newExpanded.has(level)) {
-      newExpanded.delete(level)
-    } else {
-      newExpanded.add(level)
-    }
-    setExpandedLevels(newExpanded)
-  }
+  useEffect(() => {
+    fetchMessages();
+  }, []);
 
-  const handleAdd = async () => {
-    if (!formData.content.trim()) return
-    
+  const level = getLevel();
+
+  const filteredMessages = messages.filter(msg => {
+    if (level === 'all') return true;
+    return msg.level === level;
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddMessage = () => {
+    setEditingMessage(null);
+    setFormData({ level: level !== 'all' ? level : 'normal', content: '' });
+    setShowModal(true);
+  };
+
+  const handleEditMessage = (message: PushMessage) => {
+    setEditingMessage(message);
+    setFormData({ level: message.level, content: message.content });
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
     try {
-      const res = await fetch('http://localhost:8000/api/push/message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setShowAddModal(false)
-        setFormData({ level: 'normal', content: '' })
-        fetchMessages()
+      if (editingMessage) {
+        await adminApi.updatePushMessage(editingMessage.id, formData);
+      } else {
+        await adminApi.createPushMessage(formData.level, formData.content);
       }
-    } catch (err) {
-      console.error('Failed to add message:', err)
-    }
-  }
 
-  const handleEdit = async () => {
-    if (!editingId || !formData.content.trim()) return
-    
+      setShowModal(false);
+      fetchMessages();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '操作失败');
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: number) => {
+    if (!confirm('确定要删除这条推送消息吗？')) return;
+
     try {
-      const res = await fetch(`http://localhost:8000/api/push/message/${editingId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setEditingId(null)
-        setFormData({ level: 'normal', content: '' })
-        fetchMessages()
-      }
+      await adminApi.deletePushMessage(messageId);
+      fetchMessages();
     } catch (err) {
-      console.error('Failed to update message:', err)
+      setError(err instanceof Error ? err.message : '删除推送消息失败');
     }
-  }
+  };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这条消息吗？')) return
-    
-    try {
-      const res = await fetch(`http://localhost:8000/api/push/message/${id}`, {
-        method: 'DELETE',
-      })
-      const data = await res.json()
-      if (data.success) {
-        fetchMessages()
-      }
-    } catch (err) {
-      console.error('Failed to delete message:', err)
-    }
-  }
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
 
-  const getMessagesByLevel = () => {
-    const grouped: Record<string, PushMessage[]> = {}
-    levelOptions.forEach(opt => {
-      grouped[opt.value] = []
-    })
-    messages.forEach(msg => {
-      if (grouped[msg.level]) {
-        grouped[msg.level].push(msg)
-      }
-    })
-    return grouped
-  }
+  const getLevelLabel = (lev: string) => {
+    const labels: Record<string, string> = {
+      'all': '全部',
+      'normal': '正常',
+      'mild': '轻度',
+      'moderate': '中度',
+      'severe': '重度',
+      'extremely_severe': '极重'
+    };
+    return labels[lev] || lev;
+  };
 
-  const groupedMessages = getMessagesByLevel()
+  const getLevelColor = (lev: string) => {
+    const colors: Record<string, string> = {
+      'normal': 'bg-green-100 text-green-800',
+      'mild': 'bg-yellow-100 text-yellow-800',
+      'moderate': 'bg-orange-100 text-orange-800',
+      'severe': 'bg-red-100 text-red-800',
+      'extremely_severe': 'bg-purple-100 text-purple-800'
+    };
+    return colors[lev] || 'bg-gray-100 text-gray-800';
+  };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    )
-  }
+  const paginatedMessages = filteredMessages.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="p-6">
+    <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">推送消息管理</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{getLevelLabel(level)}推送消息管理</h1>
         <button
-          onClick={() => {
-            setEditingId(null)
-            setFormData({ level: 'normal', content: '' })
-            setShowAddModal(true)
-          }}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          onClick={handleAddMessage}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
         >
-          添加消息
+          添加推送消息
         </button>
       </div>
 
-      <div className="space-y-4">
-        {levelOptions.map(levelOpt => (
-          <div key={levelOpt.value} className="bg-white rounded-lg shadow">
-            <div 
-              className="p-4 flex justify-between items-center cursor-pointer border-b"
-              onClick={() => toggleExpand(levelOpt.value)}
-            >
-              <h2 className="text-xl font-semibold">{levelOpt.label} ({groupedMessages[levelOpt.value]?.length || 0}条)</h2>
-              <div className="text-gray-500 text-xl">{expandedLevels.has(levelOpt.value) ? '▼' : '▶'}</div>
-            </div>
-            {expandedLevels.has(levelOpt.value) && (
-              <div className="p-4">
-                {groupedMessages[levelOpt.value]?.length === 0 ? (
-                  <div className="text-gray-500 text-center py-4">暂无消息</div>
-                ) : (
-                  <div className="space-y-2">
-                    {groupedMessages[levelOpt.value].map(msg => (
-                      <div key={msg.id} className="bg-gray-50 rounded p-3 flex justify-between items-start">
-                        <div className="flex-1">{msg.content}</div>
-                        <div className="ml-4 space-x-2">
-                          <button
-                            onClick={() => {
-                              setEditingId(msg.id)
-                              setFormData({ level: msg.level, content: msg.content })
-                              setShowAddModal(true)
-                            }}
-                            className="text-blue-500 hover:text-blue-700"
-                          >
-                            编辑
-                          </button>
-                          <button
-                            onClick={() => handleDelete(msg.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            删除
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          ))}
-      </div>
-
-      {/* 添加/编辑模态框 */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-2xl font-bold mb-4">{editingId ? '编辑消息' : '添加消息'}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block mb-2">等级</label>
-                <select
-                  value={formData.level}
-                  onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-                  className="w-full border rounded p-2"
-                >
-                  {levelOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-2">内容</label>
-                <textarea
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="w-full border rounded p-2 h-32"
-                  placeholder="请输入推送内容..."
-                />
-              </div>
-              <div className="flex space-x-4 pt-4">
-                <button
-                  onClick={() => {
-                    setShowAddModal(false)
-                    setEditingId(null)
-                    setFormData({ level: 'normal', content: '' })
-                  }}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={editingId ? handleEdit : handleAdd}
-                  className="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-                >
-                  {editingId ? '更新' : '添加'}
-                </button>
-              </div>
-            </div>
-          </div>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
         </div>
       )}
-    </div>
-  )
-}
 
-export default PushMessagesPage
+      {/* 消息列表 */}
+      {loading ? (
+        <div className="flex justify-center items-center py-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">ID</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">等级</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">内容</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">创建时间</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {paginatedMessages.length > 0 ? (
+                  paginatedMessages.map((message) => (
+                    <tr key={message.id} className="hover:bg-gray-50">
+                      <td className="py-4 px-4 text-sm text-gray-900">{message.id}</td>
+                      <td className="py-4 px-4 text-sm">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(message.level)}`}>
+                          {message.level_cn}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-sm text-gray-900 max-w-md truncate">{message.content}</td>
+                      <td className="py-4 px-4 text-sm text-gray-900">{new Date(message.created_at).toLocaleString()}</td>
+                      <td className="py-4 px-4 text-sm">
+                        <button
+                          onClick={() => handleEditMessage(message)}
+                          className="text-blue-600 hover:text-blue-900 mr-2"
+                        >
+                          编辑
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMessage(message.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          删除
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-gray-500">暂无数据</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 分页 */}
+          {filteredMessages.length > 0 && (
+            <div className="mt-6">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(filteredMessages.length / pageSize)}
+                onPageChange={setCurrentPage}
+                pageSize={pageSize}
+                onPageSizeChange={handlePageSizeChange}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 添加/编辑弹窗 */}
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingMessage ? '编辑推送消息' : '添加推送消息'}
+        size="lg"
+      >
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label htmlFor="level" className="block text-gray-700 text-sm font-bold mb-2">
+              等级
+            </label>
+            <select
+              id="level"
+              name="level"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.level}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="normal">正常</option>
+              <option value="mild">轻度</option>
+              <option value="moderate">中度</option>
+              <option value="severe">重度</option>
+              <option value="extremely_severe">极重</option>
+            </select>
+          </div>
+
+          <div className="mb-6">
+            <label htmlFor="content" className="block text-gray-700 text-sm font-bold mb-2">
+              推送内容
+            </label>
+            <textarea
+              id="content"
+              name="content"
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.content}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+
+          <div className="flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              {editingMessage ? '更新' : '添加'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+export default PushPage;

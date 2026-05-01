@@ -138,3 +138,102 @@ export const assessmentApi = {
     });
   },
 };
+
+// Admin 相关类型定义
+export interface AdminUser {
+  id: number;
+  username: string;
+  is_admin: number;
+  created_at: string;
+}
+
+export interface AdminLoginResponse {
+  user_id: number;
+  username: string;
+  is_admin: boolean;
+}
+
+export interface GetUsersResponse {
+  users: AdminUser[];
+}
+
+// Admin 相关API
+export const adminApi = {
+  // 管理员登录
+  login: (username: string, password: string) => {
+    return request<AdminLoginResponse>('/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+  },
+  // 获取所有用户
+  getUsers: () => {
+    return request<GetUsersResponse>('/admin/users');
+  },
+  // 创建用户
+  createUser: (username: string, password: string, is_admin: number = 0) => {
+    return request<{ message: string; user_id: number }>('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({ username, password, is_admin }),
+    });
+  },
+  // 更新用户
+  updateUser: (user_id: number, data: { username?: string; password?: string; is_admin?: number }) => {
+    return request<{ message: string }>(`/admin/users/${user_id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+  // 删除用户
+  deleteUser: (user_id: number) => {
+    return request<{ message: string }>(`/admin/users/${user_id}`, {
+      method: 'DELETE',
+    });
+  },
+  // 获取题目管理
+  getQuestions: () => {
+    return request<{ questions: Question[] }>('/admin/questions');
+  },
+  createQuestion: (content: string, dimension: string) => {
+    return request<{ message: string; question_id: number }>('/admin/questions', {
+      method: 'POST',
+      body: JSON.stringify({ content, dimension }),
+    });
+  },
+  updateQuestion: (question_id: number, data: { content?: string; dimension?: string }) => {
+    return request<{ message: string }>(`/admin/questions/${question_id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+  deleteQuestion: (question_id: number) => {
+    return request<{ message: string }>(`/admin/questions/${question_id}`, {
+      method: 'DELETE',
+    });
+  },
+  // 推送管理
+  getPushMessages: () => {
+    return request<{ data: any[] }>('/api/push/messages');
+  },
+  createPushMessage: (level: string, content: string) => {
+    return request<{ message: string; message_id: number }>('/api/push/message', {
+      method: 'POST',
+      body: JSON.stringify({ level, content }),
+    });
+  },
+  updatePushMessage: (message_id: number, data: { level?: string; content?: string }) => {
+    return request<{ message: string }>(`/api/push/message/${message_id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+  deletePushMessage: (message_id: number) => {
+    return request<{ message: string }>(`/api/push/message/${message_id}`, {
+      method: 'DELETE',
+    });
+  },
+  // Dashboard
+  getDashboardStats: () => {
+    return request<{ success: boolean; data: any }>('/api/dashboard/stats');
+  },
+};
